@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Quiz App</title>
+    <title>Dynamic Quiz App</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome for icons (optional) -->
+    <!-- Font Awesome for icons (optional but recommended for icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -25,25 +25,26 @@
 
         <main id="quiz-area">
             <div id="question-container" class="question-container">
+                 <div id="progress-indicator" class="progress-indicator"></div>
                 <h2 id="question-text">Question text appears here...</h2>
                 <div id="options-container" class="options-container">
                     <!-- Option buttons will be generated here by JS -->
                 </div>
-                <div id="feedback-area" class="feedback-area"></div>
+                <div id="feedback-area" class="feedback-area"></div> <!-- Optional, can be styled directly on buttons -->
                 <div id="repetition-progress" class="repetition-progress"></div>
                 <button id="next-button" class="next-button hidden">Next Question</button>
             </div>
              <div id="completion-area" class="completion-area hidden">
                 <h2>Quiz Complete!</h2>
                 <p id="completion-message"></p>
-                <div id="confetti-container"></div> <!-- For celebration animation -->
+                <div id="confetti-container"></div> <!-- Placeholder for potential celebration animation -->
             </div>
         </main>
     </div>
 
     <!-- Load questions data first -->
     <script src="questions.js"></script>
-    <!-- Load the main script -->
-    <script src="script.js"></script>
+    <!-- Load the main script - DEFER is important! -->
+    <script src="script.js" defer></script>
 </body>
 </html>
