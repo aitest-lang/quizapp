@@ -162,6 +162,7 @@ select:disabled {
     padding: 5px; /* Reduce padding for icon buttons */
     line-height: 1; /* Prevent extra height */
     opacity: 0.8;
+    cursor: pointer; /* Ensure cursor changes */
 }
 #theme-toggle:hover,
 #restart-button:hover {
@@ -219,13 +220,27 @@ select:disabled {
     transform: scale(0.98); /* Subtle scale down */
 }
 
+/* Style for the Progress Indicator */
+.progress-indicator {
+    text-align: right; /* Position to the right */
+    font-size: 0.9em;
+    color: var(--disabled-text-light); /* Use a muted color */
+    margin-bottom: 10px; /* Space below the indicator */
+    height: 1.2em; /* Reserve space */
+}
+
+body.dark-theme .progress-indicator {
+    color: var(--disabled-text-dark); /* Muted color for dark theme */
+}
+
 #question-text {
-    margin-bottom: 30px; /* More space below question */
+    margin-bottom: 25px; /* Maybe slightly reduce bottom margin if progress indicator adds enough space */
     font-size: 1.4em; /* Larger question text */
     line-height: 1.5;
     font-weight: 500; /* Slightly bolder */
     color: var(--text-color);
 }
+
 
 .options-container {
     display: grid;
@@ -265,7 +280,7 @@ select:disabled {
     outline: none; /* Remove default focus outline if custom style applied */
 }
 
-.option-button.selected { /* Style for when selected before validation */
+.option-button.selected { /* Style for when selected before validation (if needed) */
     border-color: var(--primary-color);
     background-color: var(--hover-bg);
 }
