@@ -1,0 +1,284 @@
+/* Basic Reset & Body Styles */
+:root {
+    --bg-color-light: #f3f4f6;
+    --text-color-light: #111827;
+    --card-bg-light: #ffffff;
+    --primary-color-light: #007bff;
+    --hover-bg-light: #e9ecef;
+    --correct-bg-light: #d1e7dd;
+    --correct-text-light: #0f5132;
+    --incorrect-bg-light: #f8d7da;
+    --incorrect-text-light: #842029;
+    --disabled-bg-light: #e9ecef;
+    --disabled-text-light: #6c757d;
+
+    --bg-color-dark: #111827;
+    --text-color-dark: #f3f4f6;
+    --card-bg-dark: #1f2937;
+    --primary-color-dark: #3b82f6;
+    --hover-bg-dark: #374151;
+    --correct-bg-dark: #052e16; /* Darker green */
+    --correct-text-dark: #a7f3d0;
+    --incorrect-bg-dark: #450a0a; /* Darker red */
+    --incorrect-text-dark: #fecaca;
+    --disabled-bg-dark: #374151;
+    --disabled-text-dark: #9ca3af;
+
+    /* Default to light theme */
+    --bg-color: var(--bg-color-light);
+    --text-color: var(--text-color-light);
+    --card-bg: var(--card-bg-light);
+    --primary-color: var(--primary-color-light);
+    --hover-bg: var(--hover-bg-light);
+    --correct-bg: var(--correct-bg-light);
+    --correct-text: var(--correct-text-light);
+    --incorrect-bg: var(--incorrect-bg-light);
+    --incorrect-text: var(--incorrect-text-light);
+    --disabled-bg: var(--disabled-bg-light);
+    --disabled-text: var(--disabled-text-light);
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top */
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Dark theme class */
+body.dark-theme {
+    --bg-color: var(--bg-color-dark);
+    --text-color: var(--text-color-dark);
+    --card-bg: var(--card-bg-dark);
+    --primary-color: var(--primary-color-dark);
+    --hover-bg: var(--hover-bg-dark);
+    --correct-bg: var(--correct-bg-dark);
+    --correct-text: var(--correct-text-dark);
+    --incorrect-bg: var(--incorrect-bg-dark);
+    --incorrect-text: var(--incorrect-text-dark);
+    --disabled-bg: var(--disabled-bg-dark);
+    --disabled-text: var(--disabled-text-dark);
+}
+
+/* Layout */
+.app-container {
+    width: 100%;
+    max-width: 700px; /* Adjust as needed */
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+    transition: background-color 0.3s ease;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap; /* Allow controls to wrap on small screens */
+}
+
+.app-header h1 {
+    margin: 0 10px 10px 0; /* Add spacing */
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* Allow buttons to wrap */
+}
+
+/* Buttons and Select */
+button, select {
+    padding: 8px 12px;
+    border: 1px solid var(--primary-color);
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+button:hover, select:hover {
+    background-color: var(--hover-bg);
+}
+
+button:active {
+     transform: scale(0.98);
+}
+
+#theme-toggle, #restart-button {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.mode-toggle button {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--text-color);
+}
+
+.mode-toggle button.active {
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Quiz Area */
+.question-container {
+    margin-bottom: 20px;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.question-container.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+#question-text {
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    line-height: 1.5;
+}
+
+.options-container {
+    display: grid;
+    grid-template-columns: 1fr; /* Default to single column */
+    gap: 10px;
+}
+
+/* Responsive grid for options on wider screens */
+@media (min-width: 600px) {
+    .options-container {
+        grid-template-columns: repeat(2, 1fr); /* Two columns */
+    }
+}
+
+.option-button {
+    width: 100%;
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ccc;
+    background-color: var(--bg-color); /* Use body bg for contrast */
+    color: var(--text-color);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+    position: relative; /* For icon positioning */
+}
+
+.option-button:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.option-button.selected {
+    border-color: var(--primary-color);
+    background-color: var(--hover-bg); /* Indicate selection */
+}
+
+.option-button:disabled {
+    cursor: not-allowed;
+    background-color: var(--disabled-bg);
+    color: var(--disabled-text);
+    border-color: var(--disabled-bg);
+}
+
+/* Feedback Styles */
+.option-button.correct {
+    background-color: var(--correct-bg);
+    color: var(--correct-text);
+    border-color: var(--correct-bg);
+    font-weight: bold;
+    animation: bounce 0.5s ease;
+}
+
+.option-button.incorrect {
+    background-color: var(--incorrect-bg);
+    color: var(--incorrect-text);
+    border-color: var(--incorrect-bg);
+    animation: shake 0.5s ease;
+}
+
+/* Add icons using pseudo-elements */
+.option-button.correct::after,
+.option-button.incorrect::after {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1em;
+}
+
+.option-button.correct::after {
+    content: "\f00c"; /* Checkmark */
+    color: var(--correct-text);
+}
+
+.option-button.incorrect::after {
+    content: "\f00d"; /* Cross */
+    color: var(--incorrect-text);
+}
+
+
+/* Next Button */
+.next-button {
+    display: block;
+    margin: 20px auto 0;
+    background-color: var(--primary-color);
+    color: var(--card-bg);
+}
+
+.hidden {
+    display: none;
+}
+
+/* Repetition Progress */
+.repetition-progress {
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+/* Completion Area */
+.completion-area {
+    text-align: center;
+    padding: 30px;
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Basic Confetti Placeholder */
+#confetti-container {
+    /* Add styles or use a library for actual confetti */
+    height: 50px; /* Placeholder */
+}
