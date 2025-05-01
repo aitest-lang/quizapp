@@ -1,4 +1,4 @@
-// --- DOM Elements ---
+// --- DOM Elements (Keep as before) ---
 const weekSelect = document.getElementById('week-select');
 const modeLearnButton = document.getElementById('mode-learn');
 const modeRepeatButton = document.getElementById('mode-repeat');
@@ -7,51 +7,82 @@ const themeToggle = document.getElementById('theme-toggle');
 const questionContainer = document.getElementById('question-container');
 const questionText = document.getElementById('question-text');
 const optionsContainer = document.getElementById('options-container');
-const feedbackArea = document.getElementById('feedback-area'); // Optional, can style buttons directly
+const feedbackArea = document.getElementById('feedback-area');
 const repetitionProgress = document.getElementById('repetition-progress');
 const nextButton = document.getElementById('next-button');
 const completionArea = document.getElementById('completion-area');
 const completionMessage = document.getElementById('completion-message');
 
 // --- State Variables ---
-let currentQuestions = [];
+let originalFilteredQuestions = []; // Unshuffled list for the selected week/all
+let currentQuestions = []; // Shuffled list currently being used in the quiz
 let currentQuestionIndex = 0;
 let selectedWeek = '';
-let currentMode = 'Learning'; // 'Learning' or 'Repetition'
-let score = 0; // For potential future use or just tracking correct answers
-let incorrectQueue = []; // Stores indices of incorrect questions for Repetition mode
-let totalErrorsInRepetition = 0; // To show progress like X/Y
-let isAnswered = false; // Prevents multiple answers per question
+let currentMode = 'Learning';
+let score = 0;
+let incorrectQueue = []; // Stores *original indices* from originalFilteredQuestions
+let totalErrorsInRepetition = 0;
+let isAnswered = false;
+
+// --- Utility Functions ---
+// Fisher-Yates Shuffle Algorithm [3]
+function shuffleArray(array) {
+    let currentIndex = array.length, randomIndex;
+    const newArray = [...array]; // Create a copy to avoid modifying the original directly
+
+    // While there remain elements to shuffle.
+    while (currentIndex !== 0) {
+        // Pick a remaining element.
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        // And swap it with the current element.
+        [newArray[currentIndex], newArray[randomIndex]] = [
+            newArray[randomIndex], newArray[currentIndex]];
+    }
+    return newArray;
+}
+
 
 // --- Initialization ---
 function initializeQuiz() {
-    loadState(); // Load saved state first
-    populateWeeks();
+    loadState();
+    populateWeeks(); // Populate before setting value
     setupEventListeners();
-    applyTheme(localStorage.getItem('quizTheme') || 'light'); // Apply saved or default theme
+    applyTheme(localStorage.getItem('quizTheme') || 'light');
 
-    // Set initial state based on loaded values or defaults
-    weekSelect.value = selectedWeek || getUniqueWeeks()[0]; // Default to first week if nothing saved
-    selectedWeek = weekSelect.value; // Ensure selectedWeek is set
+    // Set initial state (ensure selectedWeek exists in the populated options)
+    const validWeeks = Array.from(weekSelect.options).map(opt => opt.value);
+    if (selectedWeek && validWeeks.includes(selectedWeek)) {
+        weekSelect.value = selectedWeek;
+    } else {
+        selectedWeek = validWeeks.length > 0 ? validWeeks[0] : ''; // Default to first available option
+        weekSelect.value = selectedWeek;
+    }
+
     updateModeButtons();
-    startQuiz(); // Start with the loaded/default settings
+    startQuiz();
 }
 
 function populateWeeks() {
-    const weeks = getUniqueWeeks(); // Assumes getUniqueWeeks() is in questions.js [1]
+    const weeks = getUniqueWeeks(); // From questions.js [1]
+    weekSelect.innerHTML = ''; // Clear existing options
+
+    // Add "All Weeks" option
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All Weeks';
+    weekSelect.appendChild(allOption);
+
+    // Add individual week options
     weeks.forEach(week => {
+        // Skip 'other' if you don't want it selectable individually,
+        // or handle it like a normal week if you do. Let's assume we include it.
         const option = document.createElement('option');
         option.value = week;
         option.textContent = week === 'other' ? 'Other' : `Week ${week}`;
         weekSelect.appendChild(option);
     });
-    // Ensure the loaded week is selected if available
-    if (selectedWeek && weeks.includes(selectedWeek)) {
-        weekSelect.value = selectedWeek;
-    } else if (weeks.length > 0) {
-        selectedWeek = weeks[0]; // Default to the first week
-        weekSelect.value = selectedWeek;
-    }
 }
 
 function setupEventListeners() {
@@ -63,7 +94,9 @@ function setupEventListeners() {
     themeToggle.addEventListener('click', toggleTheme);
 }
 
-// --- State Management (localStorage) ---
+// --- State Management (localStorage - Keep saveState/loadState as before) ---
+// --- Theme Handling (Keep applyTheme/toggleTheme as before) ---
+
 function saveState() {
     const state = {
         selectedWeek,
@@ -71,7 +104,8 @@ function saveState() {
         currentQuestionIndex,
         incorrectQueue,
         totalErrorsInRepetition,
-        // score // Optional
+        // Need to save the original order if quiz is in progress
+        originalFilteredQuestions: originalFilteredQuestions.map(q => q.question) // Save identifiers, not full objects
     };
     localStorage.setItem('quizState', JSON.stringify(state));
 }
@@ -82,50 +116,74 @@ function loadState() {
         const state = JSON.parse(savedState);
         selectedWeek = state.selectedWeek || '';
         currentMode = state.currentMode || 'Learning';
-        // Only load index/queue if the week matches, otherwise reset
-        if (state.selectedWeek === weekSelect.value) {
-            currentQuestionIndex = state.currentQuestionIndex || 0;
-            incorrectQueue = state.incorrectQueue || [];
-            totalErrorsInRepetition = state.totalErrorsInRepetition || 0;
+
+        // Attempt to restore progress *only if* the week/mode match
+        // and the original questions seem consistent. This is complex with shuffling.
+        // For simplicity, we might often just restart if the page reloads.
+        // Let's try a basic restore:
+        if (state.selectedWeek && state.originalFilteredQuestions) {
+            // Refilter based on saved week to check consistency
+            let potentialOriginals;
+            if (state.selectedWeek === 'all') {
+                potentialOriginals = allQuestions.filter(q => typeof q.week === 'number');
+            } else {
+                 const weekValue = isNaN(parseInt(state.selectedWeek)) ? state.selectedWeek : parseInt(state.selectedWeek);
+                 potentialOriginals = allQuestions.filter(q => q.week === weekValue);
+            }
+
+            // Very basic check: compare question count
+            if (potentialOriginals.length === state.originalFilteredQuestions.length) {
+                // We could do a deeper check comparing question text if needed
+                originalFilteredQuestions = potentialOriginals; // Assume it's the same set
+                currentQuestionIndex = state.currentQuestionIndex || 0;
+                incorrectQueue = state.incorrectQueue || [];
+                totalErrorsInRepetition = state.totalErrorsInRepetition || 0;
+                // Re-shuffle the loaded original questions to maintain consistency for the session
+                currentQuestions = shuffleArray(originalFilteredQuestions);
+                // Adjust currentQuestionIndex if needed (if we saved index relative to shuffled) - complex!
+                // Safest bet: Often just restart the quiz on load unless state persistence is critical & robustly handled.
+                // For this example, let's favor restarting for simplicity on load if progress was saved.
+                console.log("Attempting to load state, but restarting quiz for consistency due to shuffling.");
+                 currentQuestionIndex = 0;
+                 incorrectQueue = [];
+                 totalErrorsInRepetition = 0;
+
+            } else {
+                // Mismatch, reset progress
+                 currentQuestionIndex = 0;
+                 incorrectQueue = [];
+                 totalErrorsInRepetition = 0;
+            }
         } else {
-             // Reset progress if week is different
+             // No saved progress, reset
              currentQuestionIndex = 0;
              incorrectQueue = [];
              totalErrorsInRepetition = 0;
         }
-        // score = state.score || 0; // Optional
+
     } else {
         // Default values if no saved state
-        selectedWeek = weekSelect.value || getUniqueWeeks()[0];
-        currentMode = 'Learning';
         currentQuestionIndex = 0;
         incorrectQueue = [];
         totalErrorsInRepetition = 0;
     }
+     // selectedWeek and currentMode will be set/updated during initializeQuiz flow
 }
-
-// --- Theme Handling ---
-function applyTheme(theme) {
-    document.body.classList.toggle('dark-theme', theme === 'dark');
-    localStorage.setItem('quizTheme', theme);
-    // Update icon based on theme (optional)
-    themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-
-}
-
-function toggleTheme() {
-    const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    applyTheme(newTheme);
-}
-
 
 // --- Core Quiz Logic ---
 function startQuiz() {
-    // Filter questions based on selected week
-    const weekValue = isNaN(parseInt(selectedWeek)) ? selectedWeek : parseInt(selectedWeek);
-    currentQuestions = allQuestions.filter(q => q.week === weekValue); [1]
+    // 1. Filter questions based on selected week/mode
+    if (selectedWeek === 'all') {
+        originalFilteredQuestions = allQuestions.filter(q => typeof q.week === 'number'); // Combine all numeric weeks
+    } else {
+        const weekValue = isNaN(parseInt(selectedWeek)) ? selectedWeek : parseInt(selectedWeek);
+        originalFilteredQuestions = allQuestions.filter(q => q.week === weekValue);
+    }
 
+    // 2. Shuffle the filtered questions for display order [3][4]
+    currentQuestions = shuffleArray(originalFilteredQuestions);
+
+    // 3. Reset state variables
     currentQuestionIndex = 0;
     score = 0;
     incorrectQueue = [];
@@ -135,7 +193,7 @@ function startQuiz() {
     completionArea.classList.add('hidden');
     questionContainer.classList.remove('hidden');
     nextButton.classList.add('hidden');
-    repetitionProgress.textContent = ''; // Clear progress text
+    repetitionProgress.textContent = '';
 
     if (currentQuestions.length > 0) {
         displayQuestion();
@@ -143,123 +201,120 @@ function startQuiz() {
         questionText.textContent = "No questions found for this selection.";
         optionsContainer.innerHTML = "";
     }
-    saveState(); // Save the initial state for the new quiz
+    // Don't save state here, save after first interaction or on unload/page hide
 }
 
 function displayQuestion() {
     isAnswered = false;
-    feedbackArea.textContent = ''; // Clear previous feedback
-    nextButton.classList.add('hidden'); // Hide next button initially
+    feedbackArea.textContent = '';
+    nextButton.classList.add('hidden');
 
-    // Smooth transition
     questionContainer.classList.add('fade-out');
 
     setTimeout(() => {
         let questionToShow;
+        let questionOriginalIndex = -1; // Track index in the *unshuffled* list
+
         if (currentMode === 'Repetition' && incorrectQueue.length > 0 && totalErrorsInRepetition > 0) {
-            // Retry phase: get question from incorrectQueue
-            const incorrectIndex = incorrectQueue[currentQuestionIndex % incorrectQueue.length]; // Cycle through queue
-            questionToShow = currentQuestions[incorrectIndex];
+            // Retry phase: get ORIGINAL index from queue
+            const originalIndex = incorrectQueue[currentQuestionIndex % incorrectQueue.length];
+            questionToShow = originalFilteredQuestions[originalIndex];
+            questionOriginalIndex = originalIndex; // Store for repetition handling
             displayRepetitionProgress();
         } else {
             // Learning mode or first pass of Repetition mode
+            if (currentQuestionIndex >= currentQuestions.length) {
+                 // Safety check for end of quiz
+                 showCompletion();
+                 return;
+            }
             questionToShow = currentQuestions[currentQuestionIndex];
-            repetitionProgress.textContent = ''; // No progress needed here
+            // Find its original index for potential addition to incorrectQueue
+            questionOriginalIndex = originalFilteredQuestions.findIndex(q => q.question === questionToShow.question);
+            repetitionProgress.textContent = '';
         }
 
         if (!questionToShow) {
-            // Should not happen if logic is correct, but handle gracefully
              showCompletion();
              return;
         }
 
         questionText.textContent = questionToShow.question;
-        optionsContainer.innerHTML = ""; // Clear previous options
+        optionsContainer.innerHTML = "";
 
-        // --- Shuffle options (optional but recommended) ---
-        const options = [...questionToShow.options]; // Create a copy
-        // Simple Fisher-Yates shuffle:
-        for (let i = options.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [options[i], options[j]] = [options[j], options[i]];
-        }
+        // --- Shuffle options --- [3][4]
+        const shuffledOptions = shuffleArray(questionToShow.options);
         // --- End Shuffle ---
 
-        options.forEach(optionText => {
+        shuffledOptions.forEach(optionText => {
             const button = document.createElement('button');
             button.textContent = optionText;
             button.classList.add('option-button');
-            button.addEventListener('click', () => handleOptionClick(optionText, button, questionToShow.correctAnswer));
+             // Pass the original index along with the click handler
+            button.addEventListener('click', () => handleOptionClick(optionText, button, questionToShow.correctAnswer, questionOriginalIndex));
             optionsContainer.appendChild(button);
         });
 
-        // Fade in the new question
         questionContainer.classList.remove('fade-out');
 
-    }, 400); // Match timeout with CSS transition duration
+    }, 400); // Match CSS transition
 }
 
-function handleOptionClick(selectedOptionText, button, correctAnswer) {
-    if (isAnswered) return; // Prevent multiple clicks
+// Modified to accept the original index
+function handleOptionClick(selectedOptionText, button, correctAnswer, originalIndex) {
+    if (isAnswered) return;
     isAnswered = true;
 
     const isCorrect = selectedOptionText === correctAnswer;
 
-    // Disable all buttons
     Array.from(optionsContainer.children).forEach(btn => {
         btn.disabled = true;
-         // Highlight correct answer regardless for learning purposes
         if (btn.textContent === correctAnswer) {
-             btn.classList.add('correct'); // Always show correct in green
+            btn.classList.add('correct');
         }
     });
 
     if (currentMode === 'Learning') {
-        handleLearningModeAnswer(isCorrect, button, correctAnswer);
-        nextButton.classList.remove('hidden'); // Show next button after answer
+        handleLearningModeAnswer(isCorrect, button); // No need for originalIndex here
+        nextButton.classList.remove('hidden');
     } else { // Repetition Mode
-        handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer);
-        // Automatically move to next question in Repetition mode after a short delay
-        setTimeout(handleNextQuestion, 1000); // Adjust delay as needed
+        handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer, originalIndex); // Pass originalIndex
+        setTimeout(handleNextQuestion, 1000);
     }
 
-    saveState(); // Save progress after each answer
+    // Consider saving state less frequently, e.g., on page unload or every few questions
+    // saveState();
 }
 
-function handleLearningModeAnswer(isCorrect, selectedButton, correctAnswer) {
+// Learning mode feedback (no changes needed here)
+function handleLearningModeAnswer(isCorrect, selectedButton) {
      if (isCorrect) {
-        // Already marked as correct by the generic highlighting
-        // feedbackArea.textContent = 'Correct!'; // Optional text feedback
-        selectedButton.classList.add('correct'); // Ensure selected is marked (redundant if highlighting all correct)
+        selectedButton.classList.add('correct');
         score++;
     } else {
-        selectedButton.classList.add('incorrect'); // Mark selected incorrect button
-        // feedbackArea.textContent = `Incorrect. Correct answer: ${correctAnswer}`; // Optional text feedback
+        selectedButton.classList.add('incorrect');
     }
 }
 
-function handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer) {
-    // In Repetition mode, only track incorrect answers during the first pass
-    // Or handle removal during retry phase
+// Modified to use originalIndex for the queue
+function handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer, originalIndex) {
     if (totalErrorsInRepetition === 0) { // First pass
         if (!isCorrect) {
-            if (!incorrectQueue.includes(currentQuestionIndex)) { // Avoid duplicates if somehow possible
-                 incorrectQueue.push(currentQuestionIndex);
+            if (!incorrectQueue.includes(originalIndex)) { // Use originalIndex
+                 incorrectQueue.push(originalIndex);
             }
         }
     } else { // Retry phase
         if (isCorrect) {
             // Remove the *correctly answered* question's original index from the queue
-            const originalIndexToRemove = incorrectQueue[currentQuestionIndex % incorrectQueue.length];
-            incorrectQueue = incorrectQueue.filter(index => index !== originalIndexToRemove);
-            // Adjust index if removal affects the current position in the cycling queue (tricky!)
-            // Simpler approach: Don't adjust index now, just let it cycle. The queue length change handles progress.
+            const indexToRemove = originalIndex; // We already have the original index
+            incorrectQueue = incorrectQueue.filter(idx => idx !== indexToRemove);
+            // No need to adjust currentQuestionIndex here, the modulo logic handles the shrinking queue
         } else {
-             // Add shake effect to the selected wrong button during retry for visual feedback
+             // Add shake effect
              const selectedButton = Array.from(optionsContainer.children).find(btn => btn.textContent === selectedOptionText);
              if(selectedButton) {
-                 selectedButton.classList.add('incorrect'); // Briefly show it's wrong
-                 // Optional: Remove 'incorrect' class after animation if desired
+                 selectedButton.classList.add('incorrect');
                  setTimeout(() => selectedButton.classList.remove('incorrect'), 500);
              }
         }
@@ -273,13 +328,13 @@ function handleNextQuestion() {
         if (incorrectQueue.length === 0) {
             showCompletion(); // All errors corrected
         } else {
-            // No index increment needed here as we use modulo on the queue length
-            // Just need to trigger redisplay which happens in displayQuestion
-             displayQuestion(); // Display next question from the remaining queue
+            // We don't increment index here; displayQuestion uses modulo
+            // The effective "next" question is handled by the shrinking queue and modulo
+             displayQuestion();
         }
     } else {
         // Learning Mode or First Pass Repetition Mode Logic
-        currentQuestionIndex++;
+        currentQuestionIndex++; // Move to the next index in the *shuffled* list
         if (currentQuestionIndex < currentQuestions.length) {
             displayQuestion();
         } else {
@@ -287,82 +342,81 @@ function handleNextQuestion() {
             if (currentMode === 'Repetition' && incorrectQueue.length > 0) {
                 // Start the retry phase
                 totalErrorsInRepetition = incorrectQueue.length;
-                currentQuestionIndex = 0; // Reset index for cycling through the queue
-                displayQuestion();
+                currentQuestionIndex = 0; // Reset index for cycling through the *incorrectQueue*
+                displayQuestion(); // Display first question from the retry queue
             } else {
-                showCompletion(); // Quiz finished
+                showCompletion(); // Quiz finished (Learning or Repetition with 0 errors)
             }
         }
     }
-     saveState(); // Save state when moving to next question or phase
+    // Consider saving state less frequently
 }
 
-function displayRepetitionProgress() {
-    if (currentMode === 'Repetition' && totalErrorsInRepetition > 0) {
-        repetitionProgress.textContent = `Remaining retries: ${incorrectQueue.length} / ${totalErrorsInRepetition}`;
-    } else {
-        repetitionProgress.textContent = '';
-    }
-}
-
+// displayRepetitionProgress (Keep as before)
+// showCompletion (Keep as before, maybe adjust messages slightly for "All Weeks")
 function showCompletion() {
     questionContainer.classList.add('hidden');
     completionArea.classList.remove('hidden');
+    let weekText = '';
+    if (selectedWeek === 'all') {
+        weekText = 'All Weeks';
+    } else if (selectedWeek === 'other') {
+        weekText = 'Other';
+    } else {
+         weekText = `Week ${selectedWeek}`;
+    }
+
     let message = '';
     if (currentMode === 'Learning') {
-        // Simple completion message for learning mode
-        message = `You finished the ${selectedWeek === 'other' ? 'Other' : 'Week ' + selectedWeek} questions!`;
-    } else { // Repetition Mode
+        message = `You finished the ${weekText} questions!`;
+    } else {
          if (totalErrorsInRepetition === 0 && incorrectQueue.length === 0) {
-             message = `Excellent! You've mastered all questions for ${selectedWeek === 'other' ? 'Other' : 'Week ' + selectedWeek}!`;
-             // Trigger confetti animation here if implemented
+             message = `Excellent! You've mastered all questions for ${weekText}!`;
+             // Trigger confetti
          } else {
-              message = `You completed the first pass for ${selectedWeek === 'other' ? 'Other' : 'Week ' + selectedWeek}. Now retrying ${totalErrorsInRepetition} incorrect questions.`;
-              // This message might be briefly shown before the retry phase starts,
-              // or handled directly within handleNextQuestion logic. Let's assume completion means fully done.
-               message = `Excellent! You've mastered all questions for ${selectedWeek === 'other' ? 'Other' : 'Week ' + selectedWeek}!`;
-               // Trigger confetti animation
+              // This state should ideally not be reached if logic is correct,
+              // as completion implies the queue is empty after retries.
+               message = `Quiz complete for ${weekText}.`;
          }
     }
     completionMessage.textContent = message;
-    // Clear saved progress for this week upon successful completion
-    localStorage.removeItem('quizState'); // Or selectively clear parts related to progress
+    localStorage.removeItem('quizState'); // Clear progress on completion
 }
 
+
+// handleWeekChange (Keep as before)
 function handleWeekChange(event) {
     selectedWeek = event.target.value;
-    // Reset progress and start quiz for the new week
-    restartQuiz(); // Restarting clears state and starts fresh for the new week
+    restartQuiz();
 }
 
+// switchMode (Keep as before)
 function switchMode(newMode) {
     if (currentMode !== newMode) {
         currentMode = newMode;
         updateModeButtons();
-        restartQuiz(); // Switching mode restarts the quiz for the current week
+        restartQuiz();
     }
 }
 
-function updateModeButtons() {
-    if (currentMode === 'Learning') {
-        modeLearnButton.classList.add('active');
-        modeRepeatButton.classList.remove('active');
-    } else {
-        modeLearnButton.classList.remove('active');
-        modeRepeatButton.classList.add('active');
-    }
-}
-
+// updateModeButtons (Keep as before)
+// restartQuiz (Keep as before)
 function restartQuiz() {
-    // Clear relevant state but keep selected week and mode
     currentQuestionIndex = 0;
     score = 0;
     incorrectQueue = [];
     totalErrorsInRepetition = 0;
     isAnswered = false;
+    originalFilteredQuestions = []; // Clear original list
+    currentQuestions = []; // Clear shuffled list
     localStorage.removeItem('quizState'); // Clear saved progress on manual restart
-    startQuiz(); // Restart with current settings
+    startQuiz(); // Restart with current settings (selectedWeek, currentMode)
 }
+
+
+// --- Global Event Listener for Saving State ---
+// Example: Save state when the user is about to leave the page
+window.addEventListener('beforeunload', saveState);
 
 
 // --- Start the application ---
