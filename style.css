@@ -1,28 +1,34 @@
-/* Basic Reset & Body Styles */
+/* =================================
+   Base Styles & Theme Variables
+   ================================= */
 :root {
-    --bg-color-light: #f3f4f6;
-    --text-color-light: #111827;
+    /* Light Theme Colors */
+    --bg-color-light: #f4f7f9; /* Lighter background */
+    --text-color-light: #1a202c; /* Darker text for better contrast */
     --card-bg-light: #ffffff;
-    --primary-color-light: #007bff;
-    --hover-bg-light: #e9ecef;
-    --correct-bg-light: #d1e7dd;
-    --correct-text-light: #0f5132;
-    --incorrect-bg-light: #f8d7da;
-    --incorrect-text-light: #842029;
-    --disabled-bg-light: #e9ecef;
-    --disabled-text-light: #6c757d;
+    --primary-color-light: #3182ce; /* Slightly adjusted blue */
+    --hover-bg-light: #edf2f7; /* Lighter hover */
+    --correct-bg-light: #c6f6d5; /* Green */
+    --correct-text-light: #2f855a;
+    --incorrect-bg-light: #fed7d7; /* Red */
+    --incorrect-text-light: #c53030;
+    --disabled-bg-light: #e2e8f0;
+    --disabled-text-light: #a0aec0;
+    --border-color-light: #cbd5e0;
 
-    --bg-color-dark: #111827;
-    --text-color-dark: #f3f4f6;
-    --card-bg-dark: #1f2937;
-    --primary-color-dark: #3b82f6;
-    --hover-bg-dark: #374151;
-    --correct-bg-dark: #052e16; /* Darker green */
-    --correct-text-dark: #a7f3d0;
-    --incorrect-bg-dark: #450a0a; /* Darker red */
-    --incorrect-text-dark: #fecaca;
-    --disabled-bg-dark: #374151;
-    --disabled-text-dark: #9ca3af;
+    /* Dark Theme Colors */
+    --bg-color-dark: #1a202c; /* Dark background */
+    --text-color-dark: #e2e8f0; /* Lighter text */
+    --card-bg-dark: #2d3748; /* Dark card background */
+    --primary-color-dark: #63b3ed; /* Lighter blue for dark mode */
+    --hover-bg-dark: #4a5568; /* Darker hover */
+    --correct-bg-dark: #2f855a; /* Dark Green */
+    --correct-text-dark: #c6f6d5;
+    --incorrect-bg-dark: #c53030; /* Dark Red */
+    --incorrect-text-dark: #fed7d7;
+    --disabled-bg-dark: #4a5568;
+    --disabled-text-dark: #718096;
+    --border-color-dark: #4a5568;
 
     /* Default to light theme */
     --bg-color: var(--bg-color-light);
@@ -36,11 +42,19 @@
     --incorrect-text: var(--incorrect-text-light);
     --disabled-bg: var(--disabled-bg-light);
     --disabled-text: var(--disabled-text-light);
+    --border-color: var(--border-color-light);
+}
+
+/* Basic Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    margin: 0;
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                 Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -49,10 +63,9 @@ body {
     align-items: flex-start; /* Align to top */
     min-height: 100vh;
     padding: 20px;
-    box-sizing: border-box;
 }
 
-/* Dark theme class */
+/* Apply Dark Theme */
 body.dark-theme {
     --bg-color: var(--bg-color-dark);
     --text-color: var(--text-color-dark);
@@ -65,81 +78,137 @@ body.dark-theme {
     --incorrect-text: var(--incorrect-text-dark);
     --disabled-bg: var(--disabled-bg-dark);
     --disabled-text: var(--disabled-text-dark);
+    --border-color: var(--border-color-dark);
 }
 
-/* Layout */
+/* =================================
+   Layout & Container
+   ================================= */
 .app-container {
     width: 100%;
-    max-width: 700px; /* Adjust as needed */
+    max-width: 850px; /* Increased width for better space usage */
     background-color: var(--card-bg);
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px 30px;
+    border-radius: 12px; /* Smoother radius */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Slightly deeper shadow */
+    padding: 30px 40px; /* Adjusted padding */
     transition: background-color 0.3s ease;
+    margin: 20px auto; /* Center container */
 }
 
 .app-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap; /* Allow controls to wrap on small screens */
+    margin-bottom: 30px; /* Increased spacing */
+    flex-wrap: wrap; /* Allow controls to wrap */
+    gap: 15px; /* Add gap for wrapped items */
+    border-bottom: 1px solid var(--border-color); /* Subtle separator */
+    padding-bottom: 20px; /* Spacing below header */
 }
 
 .app-header h1 {
-    margin: 0 10px 10px 0; /* Add spacing */
+    margin: 0;
+    font-size: 1.8em;
+    color: var(--primary-color); /* Use primary color for title */
+    font-weight: 600;
 }
 
 .controls {
     display: flex;
-    gap: 10px;
+    gap: 12px; /* Spacing between control elements */
     align-items: center;
-    flex-wrap: wrap; /* Allow buttons to wrap */
+    flex-wrap: wrap;
 }
 
-/* Buttons and Select */
-button, select {
-    padding: 8px 12px;
-    border: 1px solid var(--primary-color);
+/* =================================
+   Buttons, Select & Controls
+   ================================= */
+button,
+select {
+    padding: 10px 15px; /* Consistent padding */
+    border: 1px solid var(--border-color);
     background-color: var(--card-bg);
-    color: var(--primary-color);
-    border-radius: 5px;
+    color: var(--text-color); /* Use general text color */
+    border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
 }
 
-button:hover, select:hover {
+button:hover:not(:disabled),
+select:hover:not(:disabled) {
     background-color: var(--hover-bg);
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-button:active {
+button:active:not(:disabled) {
      transform: scale(0.98);
 }
 
-#theme-toggle, #restart-button {
+button:disabled,
+select:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Specific Icon Buttons */
+#theme-toggle,
+#restart-button {
     background: none;
     border: none;
-    font-size: 1.2em;
+    font-size: 1.4em; /* Larger icons */
     color: var(--text-color);
-    cursor: pointer;
+    padding: 5px; /* Reduce padding for icon buttons */
+    line-height: 1; /* Prevent extra height */
+    opacity: 0.8;
+}
+#theme-toggle:hover,
+#restart-button:hover {
+    opacity: 1;
+    color: var(--primary-color);
+    background: none; /* Ensure no background on hover */
+    box-shadow: none;
+}
+
+/* Mode Toggle Buttons */
+.mode-toggle {
+    display: flex;
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    overflow: hidden; /* Ensures contained border radius */
 }
 
 .mode-toggle button {
     background-color: transparent;
-    color: var(--text-color);
-    border: 1px solid var(--text-color);
+    color: var(--primary-color);
+    border: none; /* Remove individual borders */
+    border-radius: 0; /* Remove individual radius */
+    padding: 10px 15px;
+}
+.mode-toggle button:not(:last-child) {
+    border-right: 1px solid var(--primary-color); /* Separator */
 }
 
 .mode-toggle button.active {
     background-color: var(--primary-color);
-    color: var(--card-bg);
-    border-color: var(--primary-color);
-    font-weight: bold;
+    color: var(--card-bg); /* White or light text on active */
+    font-weight: 600;
+}
+.mode-toggle button:hover:not(.active) {
+    background-color: var(--hover-bg);
 }
 
-/* Quiz Area */
+
+/* =================================
+   Quiz Area & Question Display
+   ================================= */
+#quiz-area {
+    margin-top: 20px;
+}
+
 .question-container {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     opacity: 1;
     transform: scale(1);
     transition: opacity 0.4s ease-out, transform 0.4s ease-out;
@@ -147,22 +216,24 @@ button:active {
 
 .question-container.fade-out {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.98); /* Subtle scale down */
 }
 
 #question-text {
-    margin-bottom: 20px;
-    font-size: 1.2em;
+    margin-bottom: 30px; /* More space below question */
+    font-size: 1.4em; /* Larger question text */
     line-height: 1.5;
+    font-weight: 500; /* Slightly bolder */
+    color: var(--text-color);
 }
 
 .options-container {
     display: grid;
-    grid-template-columns: 1fr; /* Default to single column */
-    gap: 10px;
+    grid-template-columns: 1fr; /* Default: single column */
+    gap: 15px; /* Increased gap */
 }
 
-/* Responsive grid for options on wider screens */
+/* Responsive grid for options */
 @media (min-width: 600px) {
     .options-container {
         grid-template-columns: repeat(2, 1fr); /* Two columns */
@@ -171,26 +242,32 @@ button:active {
 
 .option-button {
     width: 100%;
-    padding: 12px;
+    padding: 15px 20px; /* Increased padding */
     text-align: left;
-    border: 1px solid #ccc;
-    background-color: var(--bg-color); /* Use body bg for contrast */
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg); /* Contrast with body */
     color: var(--text-color);
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.1s, box-shadow 0.2s;
     position: relative; /* For icon positioning */
+    font-size: 1em;
+    line-height: 1.4;
 }
 
-.option-button:hover:not(:disabled) {
+/* Hover/Focus state for options */
+.option-button:hover:not(:disabled),
+.option-button:focus:not(:disabled) {
     border-color: var(--primary-color);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: var(--hover-bg);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
+    outline: none; /* Remove default focus outline if custom style applied */
 }
 
-.option-button.selected {
+.option-button.selected { /* Style for when selected before validation */
     border-color: var(--primary-color);
-    background-color: var(--hover-bg); /* Indicate selection */
+    background-color: var(--hover-bg);
 }
 
 .option-button:disabled {
@@ -198,87 +275,151 @@ button:active {
     background-color: var(--disabled-bg);
     color: var(--disabled-text);
     border-color: var(--disabled-bg);
+    box-shadow: none;
+    transform: none;
 }
 
-/* Feedback Styles */
+/* =================================
+   Feedback Styles & Icons
+   ================================= */
 .option-button.correct {
     background-color: var(--correct-bg);
     color: var(--correct-text);
-    border-color: var(--correct-bg);
-    font-weight: bold;
+    border-color: var(--correct-text); /* Stronger border */
+    font-weight: 600; /* Bolder text */
     animation: bounce 0.5s ease;
 }
 
 .option-button.incorrect {
     background-color: var(--incorrect-bg);
     color: var(--incorrect-text);
-    border-color: var(--incorrect-bg);
+    border-color: var(--incorrect-text); /* Stronger border */
     animation: shake 0.5s ease;
 }
 
-/* Add icons using pseudo-elements */
+/* Feedback Icons (using Font Awesome) */
 .option-button.correct::after,
 .option-button.incorrect::after {
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
+    font-family: "Font Awesome 5 Free", "Font Awesome 6 Free"; /* Ensure font family */
+    font-weight: 900; /* Use solid style */
     position: absolute;
-    right: 15px;
+    right: 18px; /* Adjust position */
     top: 50%;
     transform: translateY(-50%);
-    font-size: 1.1em;
+    font-size: 1.2em; /* Slightly larger icon */
 }
 
 .option-button.correct::after {
-    content: "\f00c"; /* Checkmark */
+    content: "\f00c"; /* Checkmark icon */
     color: var(--correct-text);
 }
 
 .option-button.incorrect::after {
-    content: "\f00d"; /* Cross */
+    content: "\f00d"; /* Cross icon */
     color: var(--incorrect-text);
 }
 
 
-/* Next Button */
+/* =================================
+   Utility & Other Elements
+   ================================= */
 .next-button {
-    display: block;
-    margin: 20px auto 0;
+    display: block; /* Use block to allow margin auto */
+    margin: 30px auto 0; /* Center button */
+    padding: 12px 30px; /* Larger padding */
     background-color: var(--primary-color);
-    color: var(--card-bg);
+    color: #fff; /* Ensure white text on primary */
+    border: none;
+    font-size: 1.05em;
+    font-weight: 500;
+}
+.next-button:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--primary-color) 90%, black); /* Slightly darker */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .hidden {
-    display: none;
+    display: none !important; /* Ensure hidden elements are not visible */
 }
 
-/* Repetition Progress */
 .repetition-progress {
-    margin-top: 15px;
-    font-weight: bold;
+    margin-top: 20px;
+    font-weight: 600; /* Bolder progress text */
     text-align: center;
     color: var(--primary-color);
+    font-size: 1.1em;
+    height: 1.5em; /* Reserve space to prevent layout shifts */
 }
 
-/* Completion Area */
 .completion-area {
     text-align: center;
-    padding: 30px;
+    padding: 40px 20px; /* More padding */
+    border-top: 1px solid var(--border-color); /* Separator */
+    margin-top: 30px;
 }
 
-/* Animations */
+.completion-area h2 {
+    font-size: 1.8em;
+    color: var(--correct-text); /* Use correct color for success */
+    margin-bottom: 15px;
+}
+
+.completion-area p {
+    font-size: 1.1em;
+    margin-bottom: 20px;
+}
+
+#confetti-container {
+    /* Styles for confetti animation would go here */
+    height: 50px; /* Placeholder */
+    position: relative; /* Needed if using absolute positioning for confetti */
+}
+
+/* =================================
+   Animations
+   ================================= */
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-6px); } /* Increase bounce height */
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  25% { transform: translateX(-6px); } /* Increase shake distance */
+  75% { transform: translateX(6px); }
 }
 
-/* Basic Confetti Placeholder */
-#confetti-container {
-    /* Add styles or use a library for actual confetti */
-    height: 50px; /* Placeholder */
+/* =================================
+   Media Queries (Example for smaller screens)
+   ================================= */
+@media (max-width: 600px) {
+    .app-container {
+        padding: 20px 25px; /* Reduce padding on small screens */
+    }
+
+    .app-header {
+        flex-direction: column; /* Stack header items */
+        align-items: flex-start; /* Align left */
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+
+    .app-header h1 {
+        font-size: 1.6em;
+        margin-bottom: 10px; /* Space below title when stacked */
+    }
+
+    .controls {
+        width: 100%; /* Allow controls to take full width */
+        justify-content: space-between; /* Space out controls */
+    }
+
+    #question-text {
+        font-size: 1.2em;
+        margin-bottom: 25px;
+    }
+
+    .option-button {
+        padding: 12px 15px;
+    }
 }
