@@ -12,6 +12,7 @@ const repetitionProgress = document.getElementById('repetition-progress');
 const nextButton = document.getElementById('next-button');
 const completionArea = document.getElementById('completion-area');
 const completionMessage = document.getElementById('completion-message');
+const progressIndicator = document.getElementById('progress-indicator'); // Added
 
 // --- State Variables ---
 let originalFilteredQuestions = [];
@@ -78,7 +79,6 @@ function loadState() {
     currentQuestions = [];
 }
 
-
 // --- UI Update Functions ---
 function updateModeButtons() {
     if (modeLearnButton && modeRepeatButton) {
@@ -127,6 +127,7 @@ function startQuiz() {
     questionContainer.classList.remove('hidden');
     nextButton.classList.add('hidden');
     repetitionProgress.textContent = '';
+    if (progressIndicator) progressIndicator.textContent = ''; // Clear progress indicator initially
     updateModeButtons(); // Ensure buttons reflect current mode
 
     if (currentQuestions.length > 0) {
@@ -134,27 +135,40 @@ function startQuiz() {
     } else {
         questionText.textContent = "No questions found for this selection.";
         optionsContainer.innerHTML = "";
+        if (progressIndicator) progressIndicator.textContent = 'Question 0 / 0';
     }
 }
 
 function displayQuestion() {
     isAnswered = false;
     feedbackArea.textContent = '';
-    nextButton.classList.add('hidden'); // Always hide initially
+    nextButton.classList.add('hidden'); // Always hide next button initially
 
     questionContainer.classList.add('fade-out');
 
     setTimeout(() => {
         let questionToShow;
         let questionOriginalIndex = -1;
+        let displayIndex = 0;
+        let displayTotal = 0;
 
-        // Determine which question to show
+        // Determine which question to show & calculate progress
         if (currentMode === 'Repetition' && incorrectQueue.length > 0 && totalErrorsInRepetition > 0) {
-            // Retry phase: get ORIGINAL index from queue
-            const originalIndex = incorrectQueue[currentQuestionIndex % incorrectQueue.length]; // Cycle through queue
-            questionToShow = originalFilteredQuestions[originalIndex];
-            questionOriginalIndex = originalIndex; // Store for repetition handling
-            displayRepetitionProgress(); // Update progress display
+            // Retry phase
+            const queueIndex = currentQuestionIndex % incorrectQueue.length; // Index within the current queue cycle
+            const originalIndex = incorrectQueue[queueIndex];
+             if (originalIndex >= 0 && originalIndex < originalFilteredQuestions.length) {
+                questionToShow = originalFilteredQuestions[originalIndex];
+                questionOriginalIndex = originalIndex; // Store for repetition handling
+                displayIndex = queueIndex + 1; // Progress within the retry queue
+                displayTotal = incorrectQueue.length;
+             } else {
+                 console.error("Invalid originalIndex in incorrectQueue:", originalIndex);
+                 showCompletion(); // Abort if index is bad
+                 return;
+             }
+            displayRepetitionProgress(); // Show "Retry X / Y"
+
         } else {
             // Learning mode or first pass of Repetition mode
              if (currentQuestionIndex >= currentQuestions.length) {
@@ -164,11 +178,23 @@ function displayQuestion() {
             questionToShow = currentQuestions[currentQuestionIndex];
             // Find its original index for potential addition to incorrectQueue
             questionOriginalIndex = originalFilteredQuestions.findIndex(q => q.question === questionToShow.question);
-            repetitionProgress.textContent = ''; // Clear progress display
+            repetitionProgress.textContent = ''; // Clear retry progress
+
+            // Progress within the current full set
+            displayIndex = currentQuestionIndex + 1;
+            displayTotal = currentQuestions.length;
+        }
+
+        // Update Progress Indicator
+        if (progressIndicator) {
+            progressIndicator.textContent = `Question ${displayIndex} / ${displayTotal}`;
+        } else {
+             console.error("Progress indicator element not found!");
         }
 
         // Check if a question was found (safety)
         if (!questionToShow) {
+             console.error("Failed to determine questionToShow.");
              showCompletion();
              return;
         }
@@ -200,7 +226,8 @@ function handleOptionClick(selectedOptionText, button, correctAnswer, originalIn
 
     const isCorrect = selectedOptionText === correctAnswer;
 
-    // Disable all buttons and provide visual feedback
+    // --- Common Feedback ---
+    // Disable all buttons
     Array.from(optionsContainer.children).forEach(btn => {
         btn.disabled = true;
         // Always highlight the correct answer in green after selection
@@ -209,55 +236,56 @@ function handleOptionClick(selectedOptionText, button, correctAnswer, originalIn
         }
     });
 
-    if (currentMode === 'Learning') {
-        handleLearningModeAnswer(isCorrect, button);
-        nextButton.classList.remove('hidden'); // Show next button
-    } else { // Repetition Mode
+    // --- Mode-Specific State Update (Repetition Queue Handling) ---
+    if (currentMode === 'Repetition') {
+        // This function now ONLY handles the queue logic based on correctness
         handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer, originalIndex);
-        // Show next button regardless of correct/incorrect in Repetition Mode
+    }
+
+    // --- Conditional UI/Flow Control (Applies to BOTH modes) ---
+    if (isCorrect) {
+        // Apply correct styling to selected button (if not already done by global correct highlight)
+        if (!button.classList.contains('correct')) {
+             button.classList.add('correct');
+        }
+        score++; // Increment score if tracking
+
+        // Auto-advance after a short delay
+        setTimeout(handleNextQuestion, 1200); // Adjust delay as needed (e.g., 1.2 seconds)
+        // Ensure Next button remains hidden
+        nextButton.classList.add('hidden');
+
+    } else { // Incorrect Answer
+        // Apply incorrect styling to the selected button
+        button.classList.add('incorrect');
+
+        // REQUIRE user to press Next button
         nextButton.classList.remove('hidden');
     }
+
+    // saveState(); // Consider saving state less frequently
 }
 
-function handleLearningModeAnswer(isCorrect, selectedButton) {
-     if (isCorrect) {
-        score++;
-        // Correct answer already highlighted green in handleOptionClick
-    } else {
-        selectedButton.classList.add('incorrect'); // Highlight selected incorrect answer red
-    }
-}
-
+// --- Handles updating the repetition queue state ONLY ---
 function handleRepetitionModeAnswer(isCorrect, selectedOptionText, correctAnswer, originalIndex) {
-    const selectedButton = Array.from(optionsContainer.children).find(btn => btn.textContent === selectedOptionText);
-
+    // Only applies during Repetition Mode
     if (totalErrorsInRepetition === 0) { // First pass
         if (!isCorrect) {
-            if (!incorrectQueue.includes(originalIndex)) {
+            if (originalIndex !== -1 && !incorrectQueue.includes(originalIndex)) { // Ensure valid index
                  incorrectQueue.push(originalIndex);
             }
-            if (selectedButton) selectedButton.classList.add('incorrect'); // Show selected as incorrect
-        } else {
-             if (selectedButton && !selectedButton.classList.contains('correct')){
-                 // The globally correct button is marked green; ensure the selected one is too if correct
-                 selectedButton.classList.add('correct');
-             }
+            // Visuals handled in handleOptionClick
         }
     } else { // Retry phase
         if (isCorrect) {
             // Remove the correctly answered question's original index from the queue
-            incorrectQueue = incorrectQueue.filter(idx => idx !== originalIndex);
-             if (selectedButton && !selectedButton.classList.contains('correct')) {
-                 selectedButton.classList.add('correct'); // Mark selected as correct
-             }
-             // Update progress display after potential removal
-             displayRepetitionProgress();
-        } else {
-             // Add shake effect and mark as incorrect
-             if(selectedButton) {
-                 selectedButton.classList.add('incorrect');
-             }
+            if (originalIndex !== -1) {
+                incorrectQueue = incorrectQueue.filter(idx => idx !== originalIndex);
+            }
+            // Update progress display immediately after correct answer in retry phase
+            displayRepetitionProgress();
         }
+        // Visuals handled in handleOptionClick
     }
 }
 
@@ -301,7 +329,7 @@ function showCompletion() {
     let message = `Excellent! You've mastered all questions for ${weekText}!`; // Default completion message
 
     if (currentMode === 'Learning') {
-        // You could add score here if desired: `(${score} / ${currentQuestions.length} correct)`
+        // You could add score here if desired: e.g., `(${score} / ${currentQuestions.length} correct)`
         message = `You finished the ${weekText} questions!`;
     }
     // For Repetition mode, the default message works well for successful completion.
@@ -345,7 +373,11 @@ function restartQuiz() {
 // --- Setup and Initialization ---
 function populateWeeks() {
     if (!weekSelect) { console.error("Week select dropdown not found!"); return; }
-    // Assuming getUniqueWeeks is available from questions.js
+    // Ensure getUniqueWeeks is defined (should be in questions.js)
+    if (typeof getUniqueWeeks !== 'function') {
+        console.error("getUniqueWeeks function not found in questions.js!");
+        return;
+    }
     const weeks = getUniqueWeeks();
     weekSelect.innerHTML = ''; // Clear existing
 
